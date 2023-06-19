@@ -1,0 +1,138 @@
+ composer require admin ou composer require admin:4.*
+
+ php bin:console make:admin:dashboard
+
+Entrer pour ces 2 question suivant
+    Which class name do you prefer for your Dashboard controller? [DashboardController]:
+    In which directory of your project do you want to generate "DashboardController"? [src/Controller/Admin/]:
+
+
+on trouvera une page "Welcome to easyadmin 4" (avec confetti) lorsqu'on essaie accèder http://localhost:8000/admin
+
+https://symfony.com/bundles/EasyAdminBundle/current/index.html - doc easyAdmin
+
+
+
+php bin/console make:admin:crud
+
+
+
+composer require symfony/intl
+
+
+pour compose le MenuItem
+
+public function configureMenuItems(): iterable
+    {
+        // yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home'); -commenter cette ligne
+        // yield MenuItem::linkToCrud('The Label', 'fas fa-list', EntityClass::class);
+
+
+        //ajouter cette ligne 
+        return  [
+            MenuItem::linkToDashboard("BACKOFFICE", 'fa fa-home'),
+        //pour créer une section
+            MenuItem::section('Membre'),
+            MenuItem::linkToCrud('Utilisateurs', 'fas fa-user', User::class),
+
+             MenuItem::subMenu('Blog', 'fa fa-newspaper')->setSubItems([
+                MenuItem::linkToCrud('Categories', 'fa fa-layer-group', Categorie::class),
+                MenuItem::linkToCrud('Articles', 'fa fa-book', Article::class),
+                MenuItem::linkToCrud('Commentaires', 'fa fa-comment', Comment::class )
+        ];
+    }
+
+configurer dans crud specifique, ajouter ou cacher certain champs de formulaire 
+
+
+public function configureFields(string $pageName): iterable
+    {
+        return [
+            IdField::new('id')->hideOnForm(),
+            TextField::new('title'),
+            TextEditorField::new('description'),
+            DateTimeField::new('createdAt')->setFormat('d/M/Y à H:m:s')->hideOnForm(),
+        ];
+    }
+
+     IdField::new('id')->hideOnForm(), hideonform pour cacher
+     TextEditorField::new('content')->onlyOnForms(), seulement quand on a un formulaire
+
+     AssociationField::new('nom de la propriété') - pour importer une classe pour un champ
+     pour eviter avoir un erreur, on ajouter une function dans Entity
+
+     public function __toString()
+    {
+        return $this->title;
+    }
+
+    pour corriger l'erreur de "DateTimeField::new('createdAt')->setFormat('d/M/Y à H:m:s')->hideOnForm(),"
+    il faut créer une function dans le CrudController
+
+    public function createEntity(string $entityFqcn)
+    {
+       $article = new $entityFqcn;
+        $article->setCreatedAt(new DateTime()); 
+    }
+
+    Pour ajouter un hasher à mdp 
+
+      public function __construct(public UserPasswordHasherInterface $hasher)
+    {
+        
+    }
+
+    et une méthode pour l'utiliser 
+     public function persistEntity(EntityManagerInterface $entityManager, $entityInstance): void
+    {
+        if(!$entityInstance->getId())
+        {
+            $entityInstance->setPassword($this->hasher->hashPassword(
+                $entityInstance, $entityInstance->getPassword()
+            ));
+        }
+        $entityManager->persist($entityInstance);
+        $entityManager->flush();
+    }
+
+
+    TextField::new('password', 'mot de passe')->setFormType(PasswordType::class)->onlyWhenCreating(),
+
+
+
+    Pour changer affichage de roles
+
+    CollectionField::new('roles')->setTemplatePath('admin/field/roles.html.twig'),
+
+    créer un fichier dans template -> admin->field -> roles.html.twig
+
+    {% block _User_roles %}
+
+{# block_Entity_propriété #}
+{% for role in field.value %}
+    {% if role == "ROLE_USER" %}
+        Membre
+
+        {% elseif role == "ROLE_ADMIN" %}
+            Admin 
+
+    {% endif %}
+{% endfor %}
+
+
+{% endblock %}
+
+
+Créer un champ pour importer des images et où on veut stocker l'image
+
+ImageField::new('image')->setUploadDir('public/images/article'),
+
+Renommer l'image (voir le doc pour autre type https://symfony.com/bundles/EasyAdminBundle/current/fields/ImageField.html)
+->setUploadedFileNamePattern('[slug]-[timestamp].[extension]')
+
+indiquer où on doit chercher image avant setUploadDir, par défaut il commence à public donc on a besoin de mentionner
+->setBasePath('images/article')
+
+afficher image dans twig
+
+<img class="img-fluid" src="{{asset("images/article/" ~ item.image )}}" alt="">
