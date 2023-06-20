@@ -1,8 +1,10 @@
  composer require admin ou composer require admin:4.*
+* pour retirer en cas d'erreur - composer remove admin
 
- php bin:console make:admin:dashboard
 
-Entrer pour ces 2 question suivant
+ php bin/console make:admin:dashboard
+
+Entrer [yes] pour ces 2 question suivant
     Which class name do you prefer for your Dashboard controller? [DashboardController]:
     In which directory of your project do you want to generate "DashboardController"? [src/Controller/Admin/]:
 
@@ -11,14 +13,50 @@ on trouvera une page "Welcome to easyadmin 4" (avec confetti) lorsqu'on essaie a
 
 https://symfony.com/bundles/EasyAdminBundle/current/index.html - doc easyAdmin
 
+On ajoute un Admin AdminUrlGenerator à notre classe en propriété afin de changer le lien de direction quand on /admin (page d'acceuil de easyadmin de base) dans le dashboard controller
 
+public function __construct(private AdminUrlGenerator $adminUrlGenerator){
+
+    }
+
+Voila à quoi doit ressemble la route admin : 
+ #[Route('/admin', name: 'admin')]
+    public function index(): Response
+    {
+        // return parent::index();
+
+        // Option 1. You can make your dashboard redirect to some common page of your backend
+        //
+        // $adminUrlGenerator = $this->container->get(AdminUrlGenerator::class);
+        // return $this->redirect($adminUrlGenerator->setController(OneOfYourCrudController::class)->generateUrl());
+
+        $url = $this->adminUrlGenerator->setController(ArticleCrudController::class)->generateUrl();
+
+        //redirige la page d'accueil du backoffice vers ce crud
+
+        return $this->redirect($url);
+    }
+
+composer require symfony/intl
+
+Si message d'erreur comme celui ci : 
+    - When using date/time fields in EasyAdmin backends, you must install and enable the PHP Intl extension, which is used to format date/time values.
+
+   1.) XAMPP -> cliqué sur config(apache) pour le fichier php.ini =>  ctrl f => on décommente extension=intl => Enregistrer puis fermer.
+   2.) On ferme apache et Mysql et XAMPP dans son entièreté et on rallume.
+   3.) Si toujours erreur, on supprime le dossier cache.
+   4.) Verifier si cela fonctionne sinon rajouter le bundle intl en faisant << composer require symfony/intl >> dans la ligne de commande
+   5.)  on ferme le vscode car on était dans le même server start.
+on rallume avec php -S localhost:8000 -t public
+On se reconnecte au compte du site et on ajoute le /admin et on va apparaitre sur la page d'Article
 
 php bin/console make:admin:crud
 
 
 
-composer require symfony/intl
 
+
+*******Generer le menu
 
 pour compose le MenuItem
 
